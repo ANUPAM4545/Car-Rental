@@ -18,10 +18,12 @@ app.use(session({
 
 
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '', 
-  database: 'car_rental'
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '', 
+  database: process.env.DB_NAME || 'car_rental',
+  port: process.env.DB_PORT || 3306,
+  ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : undefined // Required for Aiven cloud connections
 });
 
 //db.connect((err) => {
@@ -304,6 +306,7 @@ app.post('/agency-requests/action', (req, res) => {
   });
 });
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000 ");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
