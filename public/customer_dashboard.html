@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+    <title>Customer Dashboard</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #e9ecef; text-align: center;">
+
+    <div style="width: 500px; margin: 50px auto; background-color: #ffffff; padding: 20px; border: 1px solid #ccc; text-align: left;">
+        <h1 style="margin-top: 0; text-align: center;">Customer Dashboard</h1>
+        
+        <p style="text-align: center; color: #555;">Welcome back! Browse and book your next ride.</p>
+
+        <h2 style="font-size: 18px; margin-top: 30px;">Available Cars for Rent</h2>
+        <div id="cars" style="margin-top: 10px;"></div>
+
+        <h2 style="font-size: 18px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px;">My Booking Requests</h2>
+        <div id="my-bookings" style="margin-top: 10px;"></div>
+
+        <script>
+            function loadCars() {
+                fetch('/cars')
+                .then(res => res.json())
+                .then(data => {
+                    let html = '';
+                    if (data.length === 0) {
+                        html = '<p>No cars available right now.</p>';
+                    }
+                    data.forEach(car => {
+                        html += `
+                          <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; background-color: #f9f9f9;">
+                              <strong>Model:</strong> ${car.model} | <strong>Seats:</strong> ${car.seats} | <strong>Rent:</strong> $${car.rent}/day
+                              <form action='/rent' method='POST' style="margin-top: 8px;">
+                                  <input type='hidden' name='car_id' value='${car.id}'>
+                                  <input type='date' name='start_date' required style="width: 140px; padding: 3px; display: block; margin-bottom: 5px;">
+                                  <select name='days' required style="width: 100px; padding: 3px;">
+                                      <option value="">Days...</option>
+                                      <option value="1">1 Day</option>
+                                      <option value="2">2 Days</option>
+                                      <option value="3">3 Days</option>
+                                      <option value="7">1 Week</option>
+                                      <option value="14">2 Weeks</option>
+                                  </select>
+                                  <button type="submit" style="padding: 3px 10px;">Rent Now</button>
+                              </form>       
+                          </div>
+                        `;
+                    });
+                    document.getElementById('cars').innerHTML = html;
+                })
+                .catch(err => console.error("Error loading cars:", err));
+            }
+
+            function loadMyBookings() {
+                fetch('/my-bookings')
+                .then(res => res.json())
+                .then(data => {
+                    let html = '';
+                    if (data.error) {
+                         html = '<p>Error loading bookings.</p>';
+                    } else if (data.length === 0) {
+                        html = '<p>You have no recent bookings.</p>';
+                    } else {
+                        data.forEach(b => {
+                            let color = b.status === 'confirmed' ? 'green' : (b.status === 'rejected' ? 'red' : 'orange');
+                            html += `
+                            <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; background-color: #fff;">
+                                <strong>Model:</strong> ${b.model} (${b.number}) <br>
+                                <strong>Duration:</strong> ${b.days} Days | <strong>Rate:</strong> $${b.rent}/day <br>
+                                <strong style="color: ${color}; text-transform: uppercase; font-size: 12px;">Status: ${b.status}</strong>
+                            </div>
+                            `;
+                        });
+                    }
+                    document.getElementById('my-bookings').innerHTML = html;
+                })
+                .catch(err => console.error(err));
+            }
+
+            // Load completely when dashboard opens
+            window.onload = function() {
+                loadCars();
+                loadMyBookings();
+            };
+        </script>
+
+        <div style="margin-top: 20px; text-align: center; border-top: 1px solid #ddd; padding-top: 10px;">
+            <a href="/logout">Log Out</a>
+        </div>
+    </div>
+
+</body>
+</html>

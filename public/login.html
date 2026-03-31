@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Car Rental</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #e9ecef; text-align: center;">
+    
+    <div style="width: 350px; margin: 100px auto; background-color: #ffffff; padding: 20px; border: 1px solid #ccc; text-align: left;">
+        <h2 style="text-align: center; margin-top: 0;">Login</h2>
+        
+        <form action="/login" method="POST">
+            <div style="margin-bottom: 10px;">
+                <label>Email:</label><br>
+                <input name="email" type="email" required style="width: 95%; padding: 5px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label>Password:</label><br>
+                <input name="password" type="password" required style="width: 95%; padding: 5px; box-sizing: border-box;">
+            </div>
+            <button type="submit" style="padding: 5px 15px; width: 100%;">Login</button>
+        </form>
+        
+        <div style="margin-top: 20px; text-align: center; font-size: 14px;">
+            <a href="/customer-signup">Sign Up (Customer)</a> &nbsp;|&nbsp;
+            <a href="/agency-signup">Sign Up (Agency)</a> &nbsp;|&nbsp;
+            <a href="/">Home</a>
+        </div>
+    </div>
+
+</body>
+</html>
