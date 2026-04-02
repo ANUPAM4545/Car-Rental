@@ -1,0 +1,123 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Comic Sans MS", "Times New Roman", serif;
+  background-color: #fdf5e6; /* Old Lace - looks like paper */
+  color: #333333;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  color: #00008b; /* DarkBlue */
+  margin-bottom: 10px;
+  text-decoration: underline;
+}
+
+/* Remove gradient - make it plain */
+.title-gradient {
+  color: #8b0000; /* DarkRed */
+  text-decoration: underline;
+}
+
+a {
+  color: #0000ff;
+  text-decoration: underline;
+}
+
+a:hover {
+  background-color: #ffff00; /* Yellow highlight on hover */
+}
+
+.container {
+  width: 90%;
+  margin: 0 auto;
+  border: 2px dashed #888;
+  padding: 20px;
+  background-color: #ffffff;
+  margin-top: 10px;
+}
+
+/* Forms */
+input, select {
+  width: 100%;
+  padding: 5px;
+  border: 2px solid #000000;
+  margin-bottom: 10px;
+  font-family: inherit;
+  background-color: #ffffe0; /* LightYellow */
+}
+
+.btn-primary {
+  background-color: #d3d3d3; /* LightGray */
+  color: #000000;
+  padding: 10px 15px;
+  border: 2px solid #000000;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn-primary:active {
+  background-color: #a9a9a9;
+}
+
+/* Disable Glassmorphism - make it a basic box */
+.glass {
+  background-color: #ffffff;
+  border: 3px double #0000ff;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+/* Navbar Beginner Styling */
+.nav-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid #000000;
+  padding: 10px;
+  background-color: #add8e6; /* LightBlue */
+  margin-bottom: 20px;
+}
+
+.nav-link {
+  margin-left: 10px;
+  font-weight: bold;
+}
+
+.active {
+  background-color: #ffff00;
+}
+
+/* Car Board */
+.car-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.car-card {
+  border: 2px solid #008000; /* Green */
+  padding: 10px;
+  background-color: #e0ffff; /* LightCyan */
+}
+
+/* Basic Table for Customer Bookings */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #000000;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #ffb6c1; /* LightPink */
+}

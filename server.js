@@ -2,20 +2,19 @@ const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-
-console.log("Server file is running..."); 
+const path = require('path');
 
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'client/dist')));
+app.use(express.static('public')); // Keep for existing assets if needed
 
 app.use(session({
   secret: 'simplekey',
   resave: false,
   saveUninitialized: true
 }));
-
 
 const db = process.env.DATABASE_URL 
   ? mysql.createConnection(process.env.DATABASE_URL)
@@ -36,73 +35,45 @@ db.connect((err) => {
   }
 });
 
-
-
-
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
-});
-
-app.get('/login', (req, res) => {
-  res.sendFile(__dirname + '/public/login.html');
-});
-
+// API Routes
 app.get('/auth-status', (req, res) => {
   if (req.session.user) {
-    res.json({ loggedIn: true, role: req.session.user.role });
+    res.json({ loggedIn: true, user: req.session.user });
   } else {
     res.json({ loggedIn: false });
   }
 });
 
-app.get('/signup', (req, res) => {
-  res.redirect('/customer-signup');
-});
-
-app.get('/customer-signup', (req, res) => {
-  res.sendFile(__dirname + '/public/customer_signup.html');
-});
-
-app.get('/agency-signup', (req, res) => {
-  res.sendFile(__dirname + '/public/agency_signup.html');
-});
-
-
 app.post('/register', (req, res) => {
   const { name, email, password, role } = req.body;
-
   db.query(
     'INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)',
     [name, email, password, role],
     (err) => {
       if (err) {
         console.log("Insert Error:", err);
-        const redirectPath = role === 'agency' ? '/agency-signup' : '/customer-signup';
-        return res.send(`<script>alert('Error in registration. Email might already exist.'); window.location.href='${redirectPath}';</script>`);
+        return res.status(400).json({ error: "Email already exists or invalid data" });
       }
-      res.send("<script>alert('Registration successful! Please login.'); window.location.href='/login';</script>");
+      res.json({ success: true, message: "Registration successful" });
     }
   );
 });
 
-
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-
   db.query(
     'SELECT * FROM users WHERE email=? AND password=?',
     [email, password],
     (err, result) => {
       if (err) {
         console.log("Login Error:", err);
-        return res.send("<script>alert('Error logging in.'); window.location.href='/login';</script>");
+        return res.status(500).json({ error: "Internal server error" });
       }
-
       if (result.length > 0) {
         req.session.user = result[0];
-        res.redirect('/dashboard');
+        res.json({ success: true, user: result[0] });
       } else {
-        res.send("<script>alert('Invalid email or password.'); window.location.href='/login';</script>");
+        res.status(401).json({ error: "Invalid email or password" });
       }
     }
   );
@@ -110,136 +81,72 @@ app.post('/login', (req, res) => {
 
 app.get('/logout', (req, res) => {
   req.session.destroy();
-  res.redirect('/');
+  res.json({ success: true });
 });
-
-
-app.get('/dashboard', (req, res) => {
-  if (!req.session.user) {
-    return res.redirect('/');
-  }
-  
-  if (req.session.user.role === 'agency') {
-    res.sendFile(__dirname + '/public/agency_dashboard.html');
-  } else {
-    res.sendFile(__dirname + '/public/customer_dashboard.html');
-  }
-});
-
 
 app.post('/add-car', (req, res) => {
   const user = req.session.user;
-
   if (!user || user.role !== 'agency') {
-    return res.send("<script>alert('Not allowed: Only agencies can add cars'); window.location.href='/dashboard';</script>");
+    return res.status(403).json({ error: "Unauthorized" });
   }
-
   const { model, number, seats, rent } = req.body;
-
   db.query(
     'INSERT INTO cars (model,number,seats,rent,agency_id) VALUES (?,?,?,?,?)',
     [model, number, seats, rent, user.id],
     (err) => {
       if (err) {
-        console.log("Car Insert Error:", err);
-        return res.send("<script>alert('Error adding car'); window.location.href='/dashboard';</script>");
+        return res.status(500).json({ error: "Database error" });
       }
-      res.redirect('/dashboard');
+      res.json({ success: true });
     }
   );
 });
 
 app.get('/cars', (req, res) => {
   db.query('SELECT * FROM cars', (err, result) => {
-    if (err) {
-      console.log("Fetch Error:", err);
-      return res.send("Error fetching cars");
-    }
+    if (err) return res.status(500).json({ error: "Internal server error" });
     res.json(result);
   });
 });
 
-
-app.get('/edit-car/:id', (req, res) => {
-  const user = req.session.user;
-  if (!user || user.role !== 'agency') {
-    return res.redirect('/login');
-  }
-
-  const carId = req.params.id;
-  db.query('SELECT * FROM cars WHERE id=? AND agency_id=?', [carId, user.id], (err, result) => {
-    if (err || result.length === 0) {
-      return res.send("<script>alert('Car not found or unauthorized'); window.location.href='/dashboard';</script>");
-    }
-    // Render an edit page via simple dynamic replacement or send a static file
-    // Ideally we would use a template engine, but we'll stick to a simple strategy for now.
-    res.sendFile(__dirname + '/public/edit_car.html');
-  });
-});
-
 app.get('/api/car/:id', (req, res) => {
-  const carId = req.params.id;
-  db.query('SELECT * FROM cars WHERE id=?', [carId], (err, result) => {
-    if (err || result.length === 0) {
-      return res.status(404).json({error: "Not found"});
-    }
+  db.query('SELECT * FROM cars WHERE id=?', [req.params.id], (err, result) => {
+    if (err || result.length === 0) return res.status(404).json({ error: "Not found" });
     res.json(result[0]);
   });
 });
 
 app.post('/edit-car/:id', (req, res) => {
   const user = req.session.user;
-  if (!user || user.role !== 'agency') {
-    return res.status(403).send("Not allowed");
-  }
-
-  const carId = req.params.id;
+  if (!user || user.role !== 'agency') return res.status(403).json({ error: "Unauthorized" });
   const { model, number, seats, rent } = req.body;
-
   db.query(
     'UPDATE cars SET model=?, number=?, seats=?, rent=? WHERE id=? AND agency_id=?',
-    [model, number, seats, rent, carId, user.id],
+    [model, number, seats, rent, req.params.id, user.id],
     (err) => {
-      if (err) {
-        console.log("Edit Car Error:", err);
-        return res.send("<script>alert('Error updating car'); window.location.href='/dashboard';</script>");
-      }
-      res.redirect('/dashboard');
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
     }
   );
 });
 
 app.post('/rent', (req, res) => {
   const user = req.session.user;
-
-  if (!user) {
-    return res.redirect('/login');
-  }
-  if (user.role !== 'customer') {
-    return res.send("<script>alert('Only customers can book cars'); window.location.href='/dashboard';</script>");
-  }
-
+  if (!user || user.role !== 'customer') return res.status(403).json({ error: "Unauthorized" });
   const { car_id, days, start_date } = req.body;
-
   db.query(
     'INSERT INTO bookings (user_id,car_id,days,start_date) VALUES (?,?,?,?)',
     [user.id, car_id, days, start_date],
     (err) => {
-      if (err) {
-        console.log("Booking Error:", err);
-        return res.send("<script>alert('Error booking car'); window.location.href='/dashboard';</script>");
-      }
-      res.send("<script>alert('Booked successfully!'); window.location.href='/dashboard';</script>");
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
     }
   );
 });
 
 app.get('/my-bookings', (req, res) => {
   const user = req.session.user;
-  if (!user || user.role !== 'customer') {
-    return res.status(403).json({ error: "Only customers can view their bookings" });
-  }
-
+  if (!user || user.role !== 'customer') return res.status(403).json({ error: "Unauthorized" });
   const query = `
     SELECT b.id, b.days, b.status, c.model, c.number, c.rent 
     FROM bookings b 
@@ -247,22 +154,15 @@ app.get('/my-bookings', (req, res) => {
     WHERE b.user_id = ?
     ORDER BY b.id DESC
   `;
-  
   db.query(query, [user.id], (err, result) => {
-    if (err) {
-      console.log("Error fetching my bookings:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(result);
   });
 });
 
 app.get('/agency-requests', (req, res) => {
   const user = req.session.user;
-  if (!user || user.role !== 'agency') {
-    return res.status(403).json({ error: "Only agencies can view requests" });
-  }
-
+  if (!user || user.role !== 'agency') return res.status(403).json({ error: "Unauthorized" });
   const query = `
     SELECT b.id, b.days, b.status, c.model, c.number, u.name as customer_name
     FROM bookings b
@@ -271,46 +171,29 @@ app.get('/agency-requests', (req, res) => {
     WHERE c.agency_id = ? AND b.status = 'pending'
     ORDER BY b.id DESC
   `;
-
   db.query(query, [user.id], (err, result) => {
-    if (err) {
-      console.log("Error fetching agency requests:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(result);
   });
 });
 
 app.post('/agency-requests/action', (req, res) => {
   const user = req.session.user;
-  if (!user || user.role !== 'agency') {
-    return res.status(403).json({ error: "Only agencies can take action" });
-  }
-
+  if (!user || user.role !== 'agency') return res.status(403).json({ error: "Unauthorized" });
   const { booking_id, action } = req.body;
-  if (!booking_id || !['confirmed', 'rejected'].includes(action)) {
-    return res.status(400).json({ error: "Invalid parameters" });
-  }
-
-  const verifyQuery = `
-    SELECT b.id FROM bookings b 
-    JOIN cars c ON b.car_id = c.id 
-    WHERE b.id = ? AND c.agency_id = ?
-  `;
-  
-  db.query(verifyQuery, [booking_id, user.id], (err, result) => {
-    if (err || result.length === 0) {
-      return res.status(403).json({ error: "Unauthorized or booking not found" });
+  db.query(
+    'UPDATE bookings SET status = ? WHERE id = ? AND car_id IN (SELECT id FROM cars WHERE agency_id = ?)',
+    [action, booking_id, user.id],
+    (err) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json({ success: true });
     }
+  );
+});
 
-    db.query('UPDATE bookings SET status = ? WHERE id = ?', [action, booking_id], (updateErr) => {
-      if (updateErr) {
-        console.log("Error updating booking status:", updateErr);
-        return res.status(500).json({ error: "Failed to update booking" });
-      }
-      res.redirect('/dashboard');
-    });
-  });
+// Wildcard route for React SPA (Express 5 safe)
+app.use((req, res, next) => {
+  res.sendFile(path.join(__dirname, 'client/dist', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
