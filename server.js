@@ -26,13 +26,13 @@ const db = mysql.createConnection({
   ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : undefined // Required for Aiven cloud connections
 });
 
-//db.connect((err) => {
- // if (err) {
- //   console.log("DB ERROR:", err);
- // } else {
- //   console.log("MySQL Connected ");
-//  }
-//});
+db.connect((err) => {
+  if (err) {
+    console.error("❌ DATABASE CONNECTION ERROR:", err.message);
+  } else {
+    console.log("✅ MySQL Connected Successfully");
+  }
+});
 
 
 
