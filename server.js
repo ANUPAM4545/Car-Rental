@@ -55,6 +55,10 @@ app.get('/auth-status', (req, res) => {
   }
 });
 
+app.get('/signup', (req, res) => {
+  res.redirect('/customer-signup');
+});
+
 app.get('/customer-signup', (req, res) => {
   res.sendFile(__dirname + '/public/customer_signup.html');
 });
@@ -73,7 +77,8 @@ app.post('/register', (req, res) => {
     (err) => {
       if (err) {
         console.log("Insert Error:", err);
-        return res.send("<script>alert('Error in registration. Email might already exist.'); window.location.href='/signup';</script>");
+        const redirectPath = role === 'agency' ? '/agency-signup' : '/customer-signup';
+        return res.send(`<script>alert('Error in registration. Email might already exist.'); window.location.href='${redirectPath}';</script>`);
       }
       res.send("<script>alert('Registration successful! Please login.'); window.location.href='/login';</script>");
     }
